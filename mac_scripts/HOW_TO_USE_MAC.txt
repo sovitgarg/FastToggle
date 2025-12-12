@@ -1,0 +1,111 @@
+============================================
+   TOGGLE AUTOMATION - QUICK START GUIDE
+   (For Mac Users)
+============================================
+
+
+============================================
+FOLDER STRUCTURE
+============================================
+
+FastToggle/
+├── ToggleExcel.xlsx         <-- Edit this file with your URLs
+├── output/                  <-- Results saved here
+└── mac_scripts/
+    ├── run.command          <-- Double-click to toggle
+    └── check_status.command <-- Double-click to check status
+
+
+============================================
+STEP 1: INSTALL PYTHON (One-time)
+============================================
+
+Option A - Homebrew:
+1. Open Terminal (Cmd+Space, type "Terminal")
+2. Run: brew install python3
+
+Option B - Direct Download:
+1. Go to: https://www.python.org/downloads/
+2. Download and install Python 3
+
+
+============================================
+STEP 2: EDIT ToggleExcel.xlsx
+============================================
+
+1. Double-click "ToggleExcel.xlsx" to open it
+   (It's in the main FastToggle folder, NOT in mac_scripts)
+
+2. Fill in your data:
+
+   | URL          | Toggle | userid         | password     |
+   |--------------|--------|----------------|--------------|
+   | https://...  | Yes    | your@email.com | yourpassword |
+   | https://...  | No     | your@email.com | yourpassword |
+
+   - "Yes" = toggle this URL
+   - "No" = skip this URL
+
+3. Save and close the file (Cmd+S)
+
+
+============================================
+STEP 3: RUN THE TOGGLE
+============================================
+
+1. Open "mac_scripts" folder
+2. Double-click "run.command"
+3. First time: Setup runs automatically (2-5 minutes)
+4. Browser opens automatically
+5. DO NOT touch keyboard/mouse while browser is running!
+6. Wait for it to finish
+7. Results saved in: output/toggle_results.xlsx
+
+If it doesn't run: Right-click > Open With > Terminal
+
+
+============================================
+STEP 4: CHECK STATUS (Optional)
+============================================
+
+To verify current toggle states:
+
+1. Open "mac_scripts" folder
+2. Double-click "check_status.command"
+3. DO NOT touch keyboard/mouse while browser is running!
+4. Results saved in: output/status_report.xlsx
+
+
+============================================
+OUTPUT FILES
+============================================
+
+output/toggle_results.xlsx:
+- status: success or failed
+- toggle_state_before: ON or OFF
+- toggle_state_after: ON or OFF
+- updated_at: Date and time
+
+output/status_report.xlsx:
+- toggle_status: ON or OFF
+- checked_at: Date and time
+
+
+============================================
+TROUBLESHOOTING
+============================================
+
+"Permission denied"
+→ Open Terminal, run: chmod +x mac_scripts/*.command
+
+"Python not found"
+→ Install Python 3 (see Step 1)
+
+First run takes long time
+→ Normal! Setup installs browser (2-5 minutes)
+
+Login fails
+→ Check userid/password in ToggleExcel.xlsx
+
+
+============================================

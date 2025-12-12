@@ -1,0 +1,22 @@
+# Virtual environment
+_system/venv/
+
+# Logs
+_system/logs/
+
+# Output files (user data)
+output/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Mac files
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Claude
+.claude/
