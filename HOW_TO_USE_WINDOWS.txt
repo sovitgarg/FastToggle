@@ -9,25 +9,29 @@ FOLDER STRUCTURE
 ============================================
 
 FastToggle/
-├── A/                        <-- Group A files
-│   ├── run_ON.bat           <-- Turn A toggles ON (Windows)
-│   ├── run_OFF.bat          <-- Turn A toggles OFF (Windows)
-│   ├── check_status.bat     <-- Check A toggle status (Windows)
-│   ├── run_ON.command       <-- Turn A toggles ON (Mac)
-│   ├── run_OFF.command      <-- Turn A toggles OFF (Mac)
-│   ├── check_status.command <-- Check A toggle status (Mac)
+├── A/                        <-- Group A (Windows)
+│   ├── run_ON.bat           <-- Turn A toggles ON
+│   ├── run_OFF.bat          <-- Turn A toggles OFF
+│   ├── check_status.bat     <-- Check A toggle status
 │   ├── ToggleExcel.xlsx     <-- URLs for group A
 │   └── output/              <-- Results saved here
 │
-├── B/                        <-- Group B files
-│   ├── run_ON.bat           <-- Turn B toggles ON (Windows)
-│   ├── run_OFF.bat          <-- Turn B toggles OFF (Windows)
-│   ├── check_status.bat     <-- Check B toggle status (Windows)
-│   ├── run_ON.command       <-- Turn B toggles ON (Mac)
-│   ├── run_OFF.command      <-- Turn B toggles OFF (Mac)
-│   ├── check_status.command <-- Check B toggle status (Mac)
+├── B/                        <-- Group B (Windows)
+│   ├── run_ON.bat           <-- Turn B toggles ON
+│   ├── run_OFF.bat          <-- Turn B toggles OFF
+│   ├── check_status.bat     <-- Check B toggle status
 │   ├── ToggleExcel.xlsx     <-- URLs for group B
 │   └── output/              <-- Results saved here
+│
+├── mac_scripts/              <-- Mac scripts
+│   ├── A/                   <-- Group A (Mac)
+│   │   ├── run_ON.command
+│   │   ├── run_OFF.command
+│   │   └── check_status.command
+│   └── B/                   <-- Group B (Mac)
+│       ├── run_ON.command
+│       ├── run_OFF.command
+│       └── check_status.command
 │
 └── _system/                  <-- System files (don't touch)
 
@@ -75,16 +79,12 @@ WINDOWS: Double-click the .bat file in the folder you want
 MAC: Double-click the .command file in the folder you want
 
 For Group A:
-   A/run_ON.bat    --> Turn ON all toggles (Windows)
-   A/run_OFF.bat   --> Turn OFF all toggles (Windows)
-   A/run_ON.command --> Turn ON all toggles (Mac)
-   A/run_OFF.command--> Turn OFF all toggles (Mac)
+   WINDOWS: A/run_ON.bat, A/run_OFF.bat
+   MAC: mac_scripts/A/run_ON.command, mac_scripts/A/run_OFF.command
 
 For Group B:
-   B/run_ON.bat    --> Turn ON all toggles (Windows)
-   B/run_OFF.bat   --> Turn OFF all toggles (Windows)
-   B/run_ON.command --> Turn ON all toggles (Mac)
-   B/run_OFF.command--> Turn OFF all toggles (Mac)
+   WINDOWS: B/run_ON.bat, B/run_OFF.bat
+   MAC: mac_scripts/B/run_ON.command, mac_scripts/B/run_OFF.command
 
 First time: Setup runs automatically (2-5 minutes)
 Browser opens automatically - DO NOT touch keyboard/mouse!
@@ -97,7 +97,7 @@ STEP 4: CHECK STATUS (Optional)
 To verify current toggle states:
 
 WINDOWS: Double-click check_status.bat in A/ or B/
-MAC: Double-click check_status.command in A/ or B/
+MAC: Double-click check_status.command in mac_scripts/A/ or mac_scripts/B/
 
 DO NOT touch keyboard/mouse while browser is running!
 Results saved in: A/output/ or B/output/

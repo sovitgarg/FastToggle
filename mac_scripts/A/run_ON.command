@@ -1,10 +1,10 @@
 #!/bin/bash
-# Set all toggles in ToggleExcel.xlsx to OFF
+# Set all toggles in ToggleExcel.xlsx to ON
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 echo "========================================="
-echo "  Toggle Automation - Set to OFF"
+echo "  Toggle Automation - Set to ON"
 echo "========================================="
 echo ""
 
@@ -27,7 +27,7 @@ fi
 
 if [ "$SETUP_NEEDED" = true ]; then
     echo "Running First-Time Setup..."
-    mkdir -p _system/scripts _system/logs B/output
+    mkdir -p _system/scripts _system/logs A/output
     python3 -m venv _system/venv
     source _system/venv/bin/activate
     pip install --upgrade pip --quiet
@@ -38,19 +38,19 @@ fi
 
 source _system/venv/bin/activate
 
-if [ ! -f "B/ToggleExcel.xlsx" ]; then
-    echo "ERROR: B/ToggleExcel.xlsx not found"
+if [ ! -f "A/ToggleExcel.xlsx" ]; then
+    echo "ERROR: A/ToggleExcel.xlsx not found"
     read -p "Press Enter to exit..."
     exit 1
 fi
 
-echo "Setting all toggles to OFF..."
-python3 _system/scripts/toggle_automation.py "B/ToggleExcel.xlsx" --state OFF --no-headless
+echo "Setting all toggles to ON..."
+python3 _system/scripts/toggle_automation.py "A/ToggleExcel.xlsx" --state ON --no-headless
 
-mkdir -p B/output
-mv toggle_results.xlsx B/output/toggle_results_OFF.xlsx 2>/dev/null
+mkdir -p A/output
+mv toggle_results.xlsx A/output/toggle_results_ON.xlsx 2>/dev/null
 mv toggle_automation_*.log _system/logs/ 2>/dev/null
 
 echo ""
-echo "Automation Complete! Results in B/output"
+echo "Automation Complete! Results in A/output"
 read -p "Press Enter to exit..."

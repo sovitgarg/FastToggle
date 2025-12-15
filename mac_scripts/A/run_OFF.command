@@ -1,10 +1,10 @@
 #!/bin/bash
-# Check toggle status for all URLs
+# Set all toggles in ToggleExcel.xlsx to OFF
 
-cd "$(dirname "$0")/.."
+cd "$(dirname "$0")/../.."
 
 echo "========================================="
-echo "  Toggle Status Checker"
+echo "  Toggle Automation - Set to OFF"
 echo "========================================="
 echo ""
 
@@ -44,13 +44,13 @@ if [ ! -f "A/ToggleExcel.xlsx" ]; then
     exit 1
 fi
 
-echo "Checking toggle status..."
-python3 _system/scripts/check_status.py "A/ToggleExcel.xlsx" --no-headless
+echo "Setting all toggles to OFF..."
+python3 _system/scripts/toggle_automation.py "A/ToggleExcel.xlsx" --state OFF --no-headless
 
 mkdir -p A/output
-mv status_report.xlsx A/output/status_report.xlsx 2>/dev/null
-mv status_check_*.log _system/logs/ 2>/dev/null
+mv toggle_results.xlsx A/output/toggle_results_OFF.xlsx 2>/dev/null
+mv toggle_automation_*.log _system/logs/ 2>/dev/null
 
 echo ""
-echo "Status Check Complete! Results in A/output"
+echo "Automation Complete! Results in A/output"
 read -p "Press Enter to exit..."
