@@ -4,7 +4,11 @@ Logs in once and checks the current state of toggles for all URLs.
 Outputs results to Excel file.
 
 Excel format:
-URL | Toggle | userid | password
+URL | userid | password
+
+Usage:
+python check_status.py "ToggleExcel_A.xlsx" --no-headless
+python check_status.py "ToggleExcel_B.xlsx" --no-headless
 """
 
 import pandas as pd
