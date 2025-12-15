@@ -192,8 +192,11 @@ class StatusChecker:
 
         try:
             # Wait for page to fully load
-            page.wait_for_load_state("networkidle", timeout=15000)
-            page.wait_for_timeout(2000)
+            try:
+                page.wait_for_load_state("networkidle", timeout=30000)
+            except Exception:
+                logger.info("Page still loading, continuing...")
+            page.wait_for_timeout(3000)
 
             # Dismiss any Pendo popups that may be blocking
             self.dismiss_popups(page)
@@ -201,12 +204,25 @@ class StatusChecker:
             # Check toggle state
             toggle_selector = 'text="In-app event postbacks" >> .. >> input[type="checkbox"]'
 
-            # Wait for toggle element to appear (fixes race condition)
-            try:
-                page.wait_for_selector(toggle_selector, timeout=10000)
-            except Exception:
+            # Wait for toggle element to appear with retry logic
+            toggle_found = False
+            for attempt in range(2):
+                try:
+                    page.wait_for_selector(toggle_selector, timeout=20000)
+                    toggle_found = True
+                    break
+                except Exception:
+                    if attempt == 0:
+                        logger.info("Toggle not found, refreshing page and retrying...")
+                        page.reload(wait_until="networkidle", timeout=30000)
+                        page.wait_for_timeout(3000)
+                        self.dismiss_popups(page)
+                    else:
+                        logger.info("Toggle not found after retry")
+
+            if not toggle_found:
                 result['toggle_status'] = 'NOT_FOUND'
-                result['message'] = 'Toggle element not found (timeout waiting for element)'
+                result['message'] = 'Toggle element not found (timeout waiting for element after retry)'
                 return result
 
             toggle = page.locator(toggle_selector).first
