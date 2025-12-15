@@ -3,6 +3,12 @@ _system/venv/
 
 # Logs
 _system/logs/
+*.log
+toggle_automation_*.log
+status_check_*.log
+
+# Temp Excel files
+~$*.xlsx
 
 # Output files (user data)
 output/
