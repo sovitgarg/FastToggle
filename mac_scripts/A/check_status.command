@@ -27,7 +27,7 @@ fi
 
 if [ "$SETUP_NEEDED" = true ]; then
     echo "Running First-Time Setup..."
-    mkdir -p _system/scripts _system/logs A/output
+    mkdir -p _system/scripts _system/logs mac_scripts/A/output
     python3 -m venv _system/venv
     source _system/venv/bin/activate
     pip install --upgrade pip --quiet
@@ -38,19 +38,19 @@ fi
 
 source _system/venv/bin/activate
 
-if [ ! -f "A/ToggleExcel.xlsx" ]; then
-    echo "ERROR: A/ToggleExcel.xlsx not found"
+if [ ! -f "mac_scripts/A/ToggleExcel.xlsx" ]; then
+    echo "ERROR: mac_scripts/A/ToggleExcel.xlsx not found"
     read -p "Press Enter to exit..."
     exit 1
 fi
 
 echo "Checking toggle status..."
-python3 _system/scripts/check_status.py "A/ToggleExcel.xlsx" --no-headless
+python3 _system/scripts/check_status.py "mac_scripts/A/ToggleExcel.xlsx" --no-headless
 
-mkdir -p A/output
-mv status_report.xlsx A/output/status_report.xlsx 2>/dev/null
+mkdir -p mac_scripts/A/output
+mv status_report.xlsx mac_scripts/A/output/status_report.xlsx 2>/dev/null
 mv status_check_*.log _system/logs/ 2>/dev/null
 
 echo ""
-echo "Status Check Complete! Results in A/output"
+echo "Status Check Complete! Results in mac_scripts/A/output"
 read -p "Press Enter to exit..."

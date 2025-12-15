@@ -27,7 +27,7 @@ fi
 
 if [ "$SETUP_NEEDED" = true ]; then
     echo "Running First-Time Setup..."
-    mkdir -p _system/scripts _system/logs A/output
+    mkdir -p _system/scripts _system/logs mac_scripts/A/output
     python3 -m venv _system/venv
     source _system/venv/bin/activate
     pip install --upgrade pip --quiet
@@ -38,19 +38,19 @@ fi
 
 source _system/venv/bin/activate
 
-if [ ! -f "A/ToggleExcel.xlsx" ]; then
-    echo "ERROR: A/ToggleExcel.xlsx not found"
+if [ ! -f "mac_scripts/A/ToggleExcel.xlsx" ]; then
+    echo "ERROR: mac_scripts/A/ToggleExcel.xlsx not found"
     read -p "Press Enter to exit..."
     exit 1
 fi
 
 echo "Setting all toggles to ON..."
-python3 _system/scripts/toggle_automation.py "A/ToggleExcel.xlsx" --state ON --no-headless
+python3 _system/scripts/toggle_automation.py "mac_scripts/A/ToggleExcel.xlsx" --state ON --no-headless
 
-mkdir -p A/output
-mv toggle_results.xlsx A/output/toggle_results_ON.xlsx 2>/dev/null
+mkdir -p mac_scripts/A/output
+mv toggle_results.xlsx mac_scripts/A/output/toggle_results_ON.xlsx 2>/dev/null
 mv toggle_automation_*.log _system/logs/ 2>/dev/null
 
 echo ""
-echo "Automation Complete! Results in A/output"
+echo "Automation Complete! Results in mac_scripts/A/output"
 read -p "Press Enter to exit..."
