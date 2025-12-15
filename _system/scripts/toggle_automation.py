@@ -1,12 +1,18 @@
 """
 Automated Toggle Script
-Reads URLs from Excel and toggles settings on each website.
+Reads URLs from Excel and sets toggle to desired state (ON/OFF).
 Uses single login session with multiple tabs for efficiency.
 
 Excel format:
 URL | Toggle | userid | password
-https://example.com/settings | Yes | user1 | pass1
-https://example.com/settings | No | user2 | pass2
+https://example.com/settings | ON | user1 | pass1
+https://example.com/settings | OFF | user2 | pass2
+https://example.com/settings | Skip | user3 | pass3
+
+Toggle values:
+- ON (case insensitive): Ensure toggle is turned ON
+- OFF (case insensitive): Ensure toggle is turned OFF
+- Any other value: Skip this row
 """
 
 import pandas as pd
@@ -186,16 +192,26 @@ class ToggleAutomation:
             logger.debug(f"Error dismissing popups: {str(e)}")
             return False
 
-    def toggle_and_verify(self, page, url: str) -> dict:
-        """Toggle the setting and verify the result."""
+    def set_toggle_state(self, page, url: str, desired_state: str) -> dict:
+        """Set the toggle to desired state (ON/OFF) and verify the result."""
         result = {
             'url': url,
             'status': 'failed',
+            'desired_state': desired_state.upper(),
             'toggle_state_before': 'UNKNOWN',
             'toggle_state_after': 'UNKNOWN',
             'message': '',
             'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
         }
+
+        # Validate desired_state
+        desired_state = desired_state.strip().lower()
+        if desired_state not in ['on', 'off']:
+            result['status'] = 'skipped'
+            result['message'] = f'Invalid toggle value: {desired_state}. Expected ON or OFF.'
+            return result
+
+        desired_checked = (desired_state == 'on')
 
         try:
             # Wait for page to fully load
@@ -215,9 +231,17 @@ class ToggleAutomation:
 
             state_before = toggle.is_checked()
             result['toggle_state_before'] = 'ON' if state_before else 'OFF'
-            logger.info(f"Toggle state before: {result['toggle_state_before']}")
+            logger.info(f"Toggle state before: {result['toggle_state_before']}, Desired: {desired_state.upper()}")
 
-            # Dismiss popups again before clicking
+            # Check if already in desired state
+            if state_before == desired_checked:
+                result['status'] = 'success'
+                result['toggle_state_after'] = result['toggle_state_before']
+                result['message'] = f'Already in desired state: {desired_state.upper()}'
+                logger.info(f"Already in desired state, no action needed")
+                return result
+
+            # Need to toggle - dismiss popups before clicking
             self.dismiss_popups(page)
 
             # Click toggle with force option to bypass any remaining overlays
@@ -267,13 +291,13 @@ class ToggleAutomation:
             result['toggle_state_after'] = 'ON' if state_after else 'OFF'
             logger.info(f"Toggle state after: {result['toggle_state_after']}")
 
-            # Determine success based on state change
-            if state_before != state_after:
+            # Determine success based on achieving desired state
+            if state_after == desired_checked:
                 result['status'] = 'success'
-                result['message'] = f'Toggle changed from {result["toggle_state_before"]} to {result["toggle_state_after"]}'
+                result['message'] = f'Toggle set to {desired_state.upper()} (was {result["toggle_state_before"]})'
             else:
                 result['status'] = 'failed'
-                result['message'] = f'Toggle state unchanged: {result["toggle_state_after"]}'
+                result['message'] = f'Failed to set toggle to {desired_state.upper()}. Current state: {result["toggle_state_after"]}'
 
         except Exception as e:
             result['status'] = 'error'
@@ -286,14 +310,18 @@ class ToggleAutomation:
         """Main execution method using tabs."""
         df = self.load_excel()
 
-        # Filter rows where toggle is 'yes'
-        active_rows = df[df['toggle'] == 'yes'].reset_index(drop=True)
+        # Filter rows where toggle is 'on' or 'off' (case insensitive)
+        active_rows = df[df['toggle'].isin(['on', 'off'])].reset_index(drop=True)
+        skipped_count = len(df) - len(active_rows)
+
+        if skipped_count > 0:
+            logger.info(f"Skipping {skipped_count} rows with toggle value other than ON/OFF")
 
         if len(active_rows) == 0:
-            logger.info("No rows with Toggle=Yes found")
+            logger.info("No rows with Toggle=ON or Toggle=OFF found")
             return
 
-        logger.info(f"Processing {len(active_rows)} URLs with Toggle=Yes")
+        logger.info(f"Processing {len(active_rows)} URLs (ON: {len(active_rows[active_rows['toggle'] == 'on'])}, OFF: {len(active_rows[active_rows['toggle'] == 'off'])})")
 
         with sync_playwright() as p:
             # Launch browser
@@ -375,21 +403,21 @@ class ToggleAutomation:
                 except Exception:
                     pass
 
-            # Step 3: Process each tab - toggle, verify, record, close
+            # Step 3: Process each tab - set toggle state, verify, record, close
             logger.info(f"\n{'='*50}")
             logger.info("Step 3: Processing each tab...")
 
             for idx, (page, url) in enumerate(zip(pages, urls)):
-                logger.info(f"\n--- Tab {idx + 1}/{len(pages)}: {url.split('/')[-1]} ---")
+                desired_state = active_rows.iloc[idx]['toggle']
+                logger.info(f"\n--- Tab {idx + 1}/{len(pages)}: {url.split('/')[-1]} (Set to: {desired_state.upper()}) ---")
 
                 # Bring tab to front
                 page.bring_to_front()
                 page.wait_for_timeout(500)
 
-                # Toggle and verify
-                result = self.toggle_and_verify(page, url)
+                # Set toggle to desired state and verify
+                result = self.set_toggle_state(page, url, desired_state)
                 result['userid'] = active_rows.iloc[idx]['userid']
-                result['toggle'] = 'yes'
 
                 self.results.append(result)
 
@@ -418,6 +446,7 @@ class ToggleAutomation:
         success = sum(1 for r in self.results if r['status'] == 'success')
         failed = sum(1 for r in self.results if r['status'] == 'failed')
         errors = sum(1 for r in self.results if r['status'] == 'error')
+        skipped = sum(1 for r in self.results if r['status'] == 'skipped')
 
         logger.info("\n" + "="*50)
         logger.info("EXECUTION SUMMARY")
@@ -426,11 +455,13 @@ class ToggleAutomation:
         logger.info(f"Successful: {success}")
         logger.info(f"Failed: {failed}")
         logger.info(f"Errors: {errors}")
+        logger.info(f"Skipped: {skipped}")
 
         logger.info("\nDETAILED RESULTS:")
         for r in self.results:
             url_short = r['url'].split('/')[-1]
-            logger.info(f"  {url_short}: {r['status']} | Before: {r['toggle_state_before']} | After: {r['toggle_state_after']}")
+            desired = r.get('desired_state', 'N/A')
+            logger.info(f"  {url_short}: {r['status']} | Desired: {desired} | Before: {r['toggle_state_before']} | After: {r['toggle_state_after']}")
 
 
 def main():
