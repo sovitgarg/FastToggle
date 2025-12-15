@@ -1,140 +1,254 @@
 ============================================
    TOGGLE AUTOMATION - QUICK START GUIDE
-   (For Windows and Mac Users)
 ============================================
 
 
 ============================================
-FOLDER STRUCTURE
+STEP 1: INSTALL PYTHON (One-time only)
+============================================
+
+*** WINDOWS INSTALLATION ***
+
+1. Open your web browser and go to:
+   https://www.python.org/downloads/
+
+2. Click the big yellow button "Download Python 3.x.x"
+   (The exact version number doesn't matter, just get the latest)
+
+3. Once downloaded, find the file (usually in Downloads folder):
+   - File name looks like: python-3.x.x-amd64.exe
+   - Double-click to run it
+
+4. ***** CRITICAL STEP - DO NOT SKIP *****
+
+   On the FIRST screen of the installer, you will see:
+
+   +------------------------------------------+
+   |  Install Python 3.x.x                    |
+   |                                          |
+   |  [ ] Install launcher for all users      |
+   |  [X] Add Python to PATH  <-- CHECK THIS! |
+   |                                          |
+   |  [Install Now]  [Customize installation] |
+   +------------------------------------------+
+
+   YOU MUST check the box that says:
+   "Add Python to PATH" or "Add python.exe to PATH"
+
+   This checkbox is at the BOTTOM of the installer window!
+
+5. Click "Install Now" and wait for installation to complete
+
+6. Click "Close" when done
+
+
+*** VERIFY PYTHON IS INSTALLED ***
+
+After installation, verify it works:
+
+1. Press Windows+R on keyboard
+2. Type: cmd
+3. Press Enter
+4. In the black window, type: python --version
+5. Press Enter
+
+If you see "Python 3.x.x" - SUCCESS!
+If you see "not recognized" - Python is NOT in PATH (see below)
+
+
+*** WHAT NOT TO DO ***
+
+DO NOT:
+- Skip the "Add Python to PATH" checkbox
+- Install from Microsoft Store (use python.org instead)
+- Close the installer before it finishes
+- Ignore the PATH checkbox thinking you'll do it later
+
+IF YOU FORGOT TO CHECK "Add to PATH":
+1. Uninstall Python from Control Panel > Programs
+2. Download and install again
+3. THIS TIME check "Add Python to PATH"!
+
+
+*** MAC INSTALLATION ***
+
+Python 3 is usually pre-installed on Mac. To verify:
+1. Open Terminal (Cmd+Space, type "Terminal")
+2. Type: python3 --version
+3. If you see a version number, you're good!
+
+If not installed:
+1. Install Homebrew first (copy this entire line):
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+2. Then run: brew install python3
+
+
+============================================
+STEP 2: FOLDER STRUCTURE
 ============================================
 
 FastToggle/
-├── A/                        <-- Group A (Windows)
-│   ├── run_ON.bat           <-- Turn A toggles ON
-│   ├── run_OFF.bat          <-- Turn A toggles OFF
-│   ├── check_status.bat     <-- Check A toggle status
-│   ├── ToggleExcel.xlsx     <-- URLs for group A
-│   └── output/              <-- Results saved here
-│
-├── B/                        <-- Group B (Windows)
-│   ├── run_ON.bat           <-- Turn B toggles ON
-│   ├── run_OFF.bat          <-- Turn B toggles OFF
-│   ├── check_status.bat     <-- Check B toggle status
-│   ├── ToggleExcel.xlsx     <-- URLs for group B
-│   └── output/              <-- Results saved here
-│
-├── mac_scripts/              <-- Mac scripts
-│   ├── A/                   <-- Group A (Mac)
-│   │   ├── run_ON.command
-│   │   ├── run_OFF.command
-│   │   └── check_status.command
-│   └── B/                   <-- Group B (Mac)
-│       ├── run_ON.command
-│       ├── run_OFF.command
-│       └── check_status.command
-│
-└── _system/                  <-- System files (don't touch)
+|
++-- A/                        <-- Group A (Windows)
+|   +-- run_ON.bat           <-- Turn toggles ON
+|   +-- run_OFF.bat          <-- Turn toggles OFF
+|   +-- check_status.bat     <-- Check current status
+|   +-- ToggleExcel.xlsx     <-- YOUR URLs GO HERE
+|   +-- output/              <-- Results saved here
+|
++-- B/                        <-- Group B (Windows)
+|   +-- (same files as A/)
+|
++-- mac_scripts/              <-- Mac scripts
+|   +-- A/
+|   |   +-- run_ON.command
+|   |   +-- run_OFF.command
+|   |   +-- check_status.command
+|   |   +-- ToggleExcel.xlsx <-- YOUR URLs GO HERE (Mac)
+|   +-- B/
+|       +-- (same files)
+|
++-- _system/                  <-- DO NOT TOUCH THIS FOLDER
 
 
 ============================================
-STEP 1: INSTALL PYTHON (One-time)
+STEP 3: EDIT YOUR EXCEL FILE
+============================================
+
+Open the ToggleExcel.xlsx file in your folder and add your URLs:
+
+   | url                        | userid           | password    |
+   |----------------------------|------------------|-------------|
+   | https://example.com/page1  | user@email.com   | mypassword  |
+   | https://example.com/page2  | user@email.com   | mypassword  |
+
+IMPORTANT:
+- Column names must be exactly: url, userid, password (lowercase)
+- First row is the header row
+- NO Toggle column needed - the script determines ON/OFF!
+
+
+============================================
+STEP 4: RUN THE AUTOMATION
 ============================================
 
 WINDOWS:
-1. Go to: https://www.python.org/downloads/
-2. Click "Download Python 3.x.x"
-3. Run the installer
-4. IMPORTANT: Check "Add Python to PATH" at the bottom!
-5. Click "Install Now"
+- To turn toggles ON:  Double-click A/run_ON.bat (or B/run_ON.bat)
+- To turn toggles OFF: Double-click A/run_OFF.bat (or B/run_OFF.bat)
+- To check status:     Double-click A/check_status.bat
 
 MAC:
-Python 3 is usually pre-installed. If not:
-1. Install Homebrew: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-2. Run: brew install python3
+- To turn toggles ON:  Double-click mac_scripts/A/run_ON.command
+- To turn toggles OFF: Double-click mac_scripts/A/run_OFF.command
+- To check status:     Double-click mac_scripts/A/check_status.command
+
+FIRST RUN:
+- Takes 2-5 minutes (installing browser automatically)
+- You'll see "Running First-Time Setup..." message
+- This only happens once
+
+DURING AUTOMATION:
+- A browser window will open automatically
+- DO NOT touch your keyboard or mouse!
+- Let the script complete on its own
+- Window will close when done
 
 
 ============================================
-STEP 2: CREATE EXCEL FILES
+STEP 5: CHECK RESULTS
 ============================================
 
-Edit the Excel files in each folder:
-- A/ToggleExcel.xlsx - URLs for group A
-- B/ToggleExcel.xlsx - URLs for group B
+Results are saved in the output/ folder:
 
-Excel format (3 columns only):
+   A/output/toggle_results_ON.xlsx   - Results from run_ON
+   A/output/toggle_results_OFF.xlsx  - Results from run_OFF
+   A/output/status_report.xlsx       - Results from check_status
 
-   | URL           | userid         | password     |
-   |---------------|----------------|--------------|
-   | https://...   | your@email.com | yourpassword |
-   | https://...   | your@email.com | yourpassword |
-
-NO Toggle column needed - the script determines ON/OFF!
-
-
-============================================
-STEP 3: RUN THE AUTOMATION
-============================================
-
-WINDOWS: Double-click the .bat file in the folder you want
-MAC: Double-click the .command file in the folder you want
-
-For Group A:
-   WINDOWS: A/run_ON.bat, A/run_OFF.bat
-   MAC: mac_scripts/A/run_ON.command, mac_scripts/A/run_OFF.command
-
-For Group B:
-   WINDOWS: B/run_ON.bat, B/run_OFF.bat
-   MAC: mac_scripts/B/run_ON.command, mac_scripts/B/run_OFF.command
-
-First time: Setup runs automatically (2-5 minutes)
-Browser opens automatically - DO NOT touch keyboard/mouse!
-
-
-============================================
-STEP 4: CHECK STATUS (Optional)
-============================================
-
-To verify current toggle states:
-
-WINDOWS: Double-click check_status.bat in A/ or B/
-MAC: Double-click check_status.command in mac_scripts/A/ or mac_scripts/B/
-
-DO NOT touch keyboard/mouse while browser is running!
-Results saved in: A/output/ or B/output/
-
-
-============================================
-OUTPUT FILES
-============================================
-
-A/output/toggle_results_ON.xlsx   - Results from A/run_ON
-A/output/toggle_results_OFF.xlsx  - Results from A/run_OFF
-B/output/toggle_results_ON.xlsx   - Results from B/run_ON
-B/output/toggle_results_OFF.xlsx  - Results from B/run_OFF
-
-Each file contains:
-- status: success, failed, or skipped
-- desired_state: ON or OFF
+Each result file shows:
+- status: success or failed
 - toggle_state_before: ON or OFF
 - toggle_state_after: ON or OFF
-- updated_at: Date and time
+- message: Details about what happened
+
+
+============================================
+ADDING MORE GROUPS (C, D, E, etc.)
+============================================
+
+To create a new group:
+
+WINDOWS:
+1. Copy the entire A/ folder
+2. Paste and rename to C/ (or D/, E/, etc.)
+3. Edit C/ToggleExcel.xlsx with your new URLs
+4. Double-click C/run_ON.bat or C/run_OFF.bat
+
+MAC:
+1. Copy mac_scripts/A/ folder
+2. Paste and rename to mac_scripts/C/
+3. Edit mac_scripts/C/ToggleExcel.xlsx with your new URLs
+4. Double-click the .command files
+
+No code changes needed - folders are completely independent!
 
 
 ============================================
 TROUBLESHOOTING
 ============================================
 
-"Python is not recognized"
--> Reinstall Python, check "Add to PATH"
+PROBLEM: "Python is not recognized as an internal or external command"
+SOLUTION: Python is not in PATH
+- Uninstall Python from Control Panel
+- Reinstall and CHECK "Add Python to PATH"
+- Restart your computer after reinstalling
 
-First run takes long time
--> Normal! Setup installs browser (2-5 minutes)
+PROBLEM: "python" opens Microsoft Store
+SOLUTION: Don't use Microsoft Store version
+- Close the Store window
+- Uninstall Python from Microsoft Store (if installed)
+- Install from python.org instead
 
-Login fails
--> Check userid/password in Excel file
+PROBLEM: First run takes very long time
+SOLUTION: This is normal!
+- First run downloads browser (~150MB)
+- Takes 2-5 minutes depending on internet speed
+- Subsequent runs are much faster
 
-Mac scripts won't run
--> Right-click > Open, then click "Open" in dialog
+PROBLEM: Script closes immediately with error
+SOLUTION:
+- Make sure ToggleExcel.xlsx exists in the folder
+- Check that Excel file has correct column names (url, userid, password)
+- Verify Python is installed correctly
+
+PROBLEM: Login fails
+SOLUTION:
+- Check userid and password in Excel file
+- Make sure there are no extra spaces
+- Verify credentials work when logging in manually
+
+PROBLEM: "Toggle element not found"
+SOLUTION:
+- The page may have a different layout
+- Check if the URL is correct
+- Try running again (could be a timing issue)
+
+PROBLEM: Mac says "can't be opened because unidentified developer"
+SOLUTION:
+- Right-click (or Ctrl+click) the .command file
+- Select "Open" from the menu
+- Click "Open" in the dialog that appears
+- You only need to do this once per file
+
+
+============================================
+NEED HELP?
+============================================
+
+If you're stuck:
+1. Check that Python is installed correctly (python --version in cmd)
+2. Make sure ToggleExcel.xlsx exists and has correct format
+3. Look at the output/ folder for result files
+4. Check _system/logs/ folder for detailed log files
 
 
 ============================================
