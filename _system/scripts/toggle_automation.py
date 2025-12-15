@@ -226,6 +226,14 @@ class ToggleAutomation:
 
             # Check state before toggle
             toggle_selector = 'text="In-app event postbacks" >> .. >> input[type="checkbox"]'
+
+            # Wait for toggle element to appear (fixes race condition)
+            try:
+                page.wait_for_selector(toggle_selector, timeout=10000)
+            except Exception:
+                result['message'] = 'Toggle element not found (timeout waiting for element)'
+                return result
+
             toggle = page.locator(toggle_selector).first
 
             if toggle.count() == 0:
