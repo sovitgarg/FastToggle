@@ -36,11 +36,13 @@ STEP 2: EDIT ToggleExcel.xlsx
 
    | URL          | Toggle | userid         | password     |
    |--------------|--------|----------------|--------------|
-   | https://...  | Yes    | your@email.com | yourpassword |
-   | https://...  | No     | your@email.com | yourpassword |
+   | https://...  | ON     | your@email.com | yourpassword |
+   | https://...  | OFF    | your@email.com | yourpassword |
+   | https://...  | Skip   | your@email.com | yourpassword |
 
-   - "Yes" = toggle this URL
-   - "No" = skip this URL
+   - "ON"  = Turn toggle ON (if already ON, skips)
+   - "OFF" = Turn toggle OFF (if already OFF, skips)
+   - Any other value (Skip, No, etc.) = Skip this URL
 
 3. Save and close the file (Ctrl+S)
 
@@ -73,7 +75,8 @@ OUTPUT FILES
 ============================================
 
 output/toggle_results.xlsx:
-- status: success or failed
+- status: success, failed, or skipped
+- desired_state: ON or OFF (what you requested)
 - toggle_state_before: ON or OFF
 - toggle_state_after: ON or OFF
 - updated_at: Date and time
