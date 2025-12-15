@@ -1,10 +1,10 @@
 @echo off
-REM Toggle all URLs in ToggleExcel_A.xlsx to OFF
+REM Toggle all URLs in ToggleExcel.xlsx to OFF
 
-cd /d "%~dp0"
+cd /d "%~dp0\.."
 
 echo =========================================
-echo   Toggle Automation - Set A to OFF
+echo   Toggle Automation - Set to OFF
 echo =========================================
 echo.
 
@@ -43,7 +43,7 @@ echo.
 REM Create folder structure
 if not exist "_system\scripts" mkdir _system\scripts
 if not exist "_system\logs" mkdir _system\logs
-if not exist "output" mkdir output
+if not exist "A\output" mkdir A\output
 
 echo Creating virtual environment...
 python -m venv _system\venv
@@ -66,9 +66,9 @@ REM Activate virtual environment
 call _system\venv\Scripts\activate.bat
 
 REM Check for Excel file
-if not exist "ToggleExcel_A.xlsx" (
-    echo ERROR: ToggleExcel_A.xlsx not found
-    echo Please create ToggleExcel_A.xlsx with columns: URL, userid, password
+if not exist "A\ToggleExcel.xlsx" (
+    echo ERROR: A\ToggleExcel.xlsx not found
+    echo Please create ToggleExcel.xlsx with columns: URL, userid, password
     pause
     exit /b 1
 )
@@ -76,16 +76,17 @@ if not exist "ToggleExcel_A.xlsx" (
 echo Starting automation - Setting all toggles to OFF...
 echo.
 
-python _system\scripts\toggle_automation.py "ToggleExcel_A.xlsx" --state OFF --no-headless
+python _system\scripts\toggle_automation.py "A\ToggleExcel.xlsx" --state OFF --no-headless
 
 REM Move results to output folder
-move toggle_results.xlsx "output\toggle_results_A_OFF.xlsx" >nul 2>&1
+if not exist "A\output" mkdir A\output
+move toggle_results.xlsx "A\output\toggle_results_OFF.xlsx" >nul 2>&1
 move toggle_automation_*.log _system\logs\ >nul 2>&1
 
 echo.
 echo =========================================
 echo   Automation Complete!
 echo =========================================
-echo Results saved in 'output' folder
+echo Results saved in 'A\output' folder
 echo.
 pause

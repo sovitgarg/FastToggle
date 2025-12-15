@@ -1,6 +1,6 @@
 ============================================
    TOGGLE AUTOMATION - QUICK START GUIDE
-   (For Windows Users)
+   (For Windows and Mac Users)
 ============================================
 
 
@@ -9,35 +9,53 @@ FOLDER STRUCTURE
 ============================================
 
 FastToggle/
-├── run_A_ON.bat          <-- Set all A toggles to ON
-├── run_A_OFF.bat         <-- Set all A toggles to OFF
-├── run_B_ON.bat          <-- Set all B toggles to ON
-├── run_B_OFF.bat         <-- Set all B toggles to OFF
-├── ToggleExcel_A.xlsx    <-- URLs for group A
-├── ToggleExcel_B.xlsx    <-- URLs for group B
-├── check_status.bat      <-- Check current toggle status
-└── output/               <-- Results saved here
+├── A/                        <-- Group A files
+│   ├── run_ON.bat           <-- Turn A toggles ON (Windows)
+│   ├── run_OFF.bat          <-- Turn A toggles OFF (Windows)
+│   ├── check_status.bat     <-- Check A toggle status (Windows)
+│   ├── run_ON.command       <-- Turn A toggles ON (Mac)
+│   ├── run_OFF.command      <-- Turn A toggles OFF (Mac)
+│   ├── check_status.command <-- Check A toggle status (Mac)
+│   ├── ToggleExcel.xlsx     <-- URLs for group A
+│   └── output/              <-- Results saved here
+│
+├── B/                        <-- Group B files
+│   ├── run_ON.bat           <-- Turn B toggles ON (Windows)
+│   ├── run_OFF.bat          <-- Turn B toggles OFF (Windows)
+│   ├── check_status.bat     <-- Check B toggle status (Windows)
+│   ├── run_ON.command       <-- Turn B toggles ON (Mac)
+│   ├── run_OFF.command      <-- Turn B toggles OFF (Mac)
+│   ├── check_status.command <-- Check B toggle status (Mac)
+│   ├── ToggleExcel.xlsx     <-- URLs for group B
+│   └── output/              <-- Results saved here
+│
+└── _system/                  <-- System files (don't touch)
 
 
 ============================================
 STEP 1: INSTALL PYTHON (One-time)
 ============================================
 
+WINDOWS:
 1. Go to: https://www.python.org/downloads/
 2. Click "Download Python 3.x.x"
 3. Run the installer
 4. IMPORTANT: Check "Add Python to PATH" at the bottom!
 5. Click "Install Now"
 
+MAC:
+Python 3 is usually pre-installed. If not:
+1. Install Homebrew: /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+2. Run: brew install python3
+
 
 ============================================
 STEP 2: CREATE EXCEL FILES
 ============================================
 
-Create two Excel files:
-
-1. ToggleExcel_A.xlsx - URLs for group A
-2. ToggleExcel_B.xlsx - URLs for group B
+Edit the Excel files in each folder:
+- A/ToggleExcel.xlsx - URLs for group A
+- B/ToggleExcel.xlsx - URLs for group B
 
 Excel format (3 columns only):
 
@@ -46,19 +64,27 @@ Excel format (3 columns only):
    | https://...   | your@email.com | yourpassword |
    | https://...   | your@email.com | yourpassword |
 
-NO Toggle column needed!
+NO Toggle column needed - the script determines ON/OFF!
 
 
 ============================================
 STEP 3: RUN THE AUTOMATION
 ============================================
 
-Just double-click the appropriate batch file:
+WINDOWS: Double-click the .bat file in the folder you want
+MAC: Double-click the .command file in the folder you want
 
-   run_A_ON.bat   --> Turn ON all toggles in ToggleExcel_A.xlsx
-   run_A_OFF.bat  --> Turn OFF all toggles in ToggleExcel_A.xlsx
-   run_B_ON.bat   --> Turn ON all toggles in ToggleExcel_B.xlsx
-   run_B_OFF.bat  --> Turn OFF all toggles in ToggleExcel_B.xlsx
+For Group A:
+   A/run_ON.bat    --> Turn ON all toggles (Windows)
+   A/run_OFF.bat   --> Turn OFF all toggles (Windows)
+   A/run_ON.command --> Turn ON all toggles (Mac)
+   A/run_OFF.command--> Turn OFF all toggles (Mac)
+
+For Group B:
+   B/run_ON.bat    --> Turn ON all toggles (Windows)
+   B/run_OFF.bat   --> Turn OFF all toggles (Windows)
+   B/run_ON.command --> Turn ON all toggles (Mac)
+   B/run_OFF.command--> Turn OFF all toggles (Mac)
 
 First time: Setup runs automatically (2-5 minutes)
 Browser opens automatically - DO NOT touch keyboard/mouse!
@@ -70,19 +96,21 @@ STEP 4: CHECK STATUS (Optional)
 
 To verify current toggle states:
 
-1. Double-click "check_status.bat"
-2. DO NOT touch keyboard/mouse while browser is running!
-3. Results saved in: output/status_report.xlsx
+WINDOWS: Double-click check_status.bat in A/ or B/
+MAC: Double-click check_status.command in A/ or B/
+
+DO NOT touch keyboard/mouse while browser is running!
+Results saved in: A/output/ or B/output/
 
 
 ============================================
 OUTPUT FILES
 ============================================
 
-output/toggle_results_A_ON.xlsx   - Results from run_A_ON.bat
-output/toggle_results_A_OFF.xlsx  - Results from run_A_OFF.bat
-output/toggle_results_B_ON.xlsx   - Results from run_B_ON.bat
-output/toggle_results_B_OFF.xlsx  - Results from run_B_OFF.bat
+A/output/toggle_results_ON.xlsx   - Results from A/run_ON
+A/output/toggle_results_OFF.xlsx  - Results from A/run_OFF
+B/output/toggle_results_ON.xlsx   - Results from B/run_ON
+B/output/toggle_results_OFF.xlsx  - Results from B/run_OFF
 
 Each file contains:
 - status: success, failed, or skipped
@@ -104,6 +132,9 @@ First run takes long time
 
 Login fails
 -> Check userid/password in Excel file
+
+Mac scripts won't run
+-> Right-click > Open, then click "Open" in dialog
 
 
 ============================================
