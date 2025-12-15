@@ -127,6 +127,55 @@ class StatusChecker:
             logger.error(f"Login failed: {str(e)}")
             return False
 
+    def dismiss_popups(self, page):
+        """Dismiss Pendo popups and other overlays that may block interactions."""
+        try:
+            # Pendo popup dismiss selectors
+            pendo_dismiss_selectors = [
+                '#pendo-close-guide-.*',
+                '[data-pendo-close-guide]',
+                'button._pendo-close-guide',
+                '._pendo-close-guide',
+                '[class*="pendo"] button[aria-label*="close"]',
+                '[class*="pendo"] button[aria-label*="Close"]',
+                '[class*="pendo"] [class*="close"]',
+                '#pendo-base button',
+                '._pendo-step-container button',
+            ]
+
+            for selector in pendo_dismiss_selectors:
+                try:
+                    close_btn = page.locator(selector).first
+                    if close_btn.count() > 0 and close_btn.is_visible():
+                        close_btn.click(force=True)
+                        logger.info(f"Dismissed Pendo popup using: {selector}")
+                        page.wait_for_timeout(500)
+                        return True
+                except Exception:
+                    continue
+
+            # Try pressing Escape key to dismiss any modal
+            try:
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(300)
+            except Exception:
+                pass
+
+            # Try removing Pendo elements via JavaScript
+            try:
+                page.evaluate("""
+                    const pendoElements = document.querySelectorAll('#pendo-base, [class*="pendo-backdrop"], ._pendo-step-container');
+                    pendoElements.forEach(el => el.remove());
+                """)
+                logger.info("Removed Pendo elements via JavaScript")
+            except Exception:
+                pass
+
+            return False
+        except Exception as e:
+            logger.debug(f"Error dismissing popups: {str(e)}")
+            return False
+
     def check_toggle_status(self, page, url: str) -> dict:
         """Check the current toggle status without modifying it."""
         result = {
@@ -141,6 +190,9 @@ class StatusChecker:
             # Wait for page to fully load
             page.wait_for_load_state("networkidle", timeout=15000)
             page.wait_for_timeout(2000)
+
+            # Dismiss any Pendo popups that may be blocking
+            self.dismiss_popups(page)
 
             # Check toggle state
             toggle_selector = 'text="In-app event postbacks" >> .. >> input[type="checkbox"]'

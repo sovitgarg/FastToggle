@@ -137,6 +137,55 @@ class ToggleAutomation:
             logger.error(f"Login failed: {str(e)}")
             return False
 
+    def dismiss_popups(self, page):
+        """Dismiss Pendo popups and other overlays that may block interactions."""
+        try:
+            # Pendo popup dismiss selectors
+            pendo_dismiss_selectors = [
+                '#pendo-close-guide-.*',
+                '[data-pendo-close-guide]',
+                'button._pendo-close-guide',
+                '._pendo-close-guide',
+                '[class*="pendo"] button[aria-label*="close"]',
+                '[class*="pendo"] button[aria-label*="Close"]',
+                '[class*="pendo"] [class*="close"]',
+                '#pendo-base button',
+                '._pendo-step-container button',
+            ]
+
+            for selector in pendo_dismiss_selectors:
+                try:
+                    close_btn = page.locator(selector).first
+                    if close_btn.count() > 0 and close_btn.is_visible():
+                        close_btn.click(force=True)
+                        logger.info(f"Dismissed Pendo popup using: {selector}")
+                        page.wait_for_timeout(500)
+                        return True
+                except Exception:
+                    continue
+
+            # Try pressing Escape key to dismiss any modal
+            try:
+                page.keyboard.press("Escape")
+                page.wait_for_timeout(300)
+            except Exception:
+                pass
+
+            # Try removing Pendo elements via JavaScript
+            try:
+                page.evaluate("""
+                    const pendoElements = document.querySelectorAll('#pendo-base, [class*="pendo-backdrop"], ._pendo-step-container');
+                    pendoElements.forEach(el => el.remove());
+                """)
+                logger.info("Removed Pendo elements via JavaScript")
+            except Exception:
+                pass
+
+            return False
+        except Exception as e:
+            logger.debug(f"Error dismissing popups: {str(e)}")
+            return False
+
     def toggle_and_verify(self, page, url: str) -> dict:
         """Toggle the setting and verify the result."""
         result = {
@@ -153,6 +202,9 @@ class ToggleAutomation:
             page.wait_for_load_state("networkidle", timeout=15000)
             page.wait_for_timeout(2000)
 
+            # Dismiss any Pendo popups that may be blocking
+            self.dismiss_popups(page)
+
             # Check state before toggle
             toggle_selector = 'text="In-app event postbacks" >> .. >> input[type="checkbox"]'
             toggle = page.locator(toggle_selector).first
@@ -165,12 +217,22 @@ class ToggleAutomation:
             result['toggle_state_before'] = 'ON' if state_before else 'OFF'
             logger.info(f"Toggle state before: {result['toggle_state_before']}")
 
-            # Click toggle
-            page.click(toggle_selector)
+            # Dismiss popups again before clicking
+            self.dismiss_popups(page)
+
+            # Click toggle with force option to bypass any remaining overlays
+            try:
+                page.click(toggle_selector, timeout=5000)
+            except Exception:
+                logger.info("Normal click failed, trying force click...")
+                page.locator(toggle_selector).first.click(force=True)
             logger.info("Toggle clicked")
 
             # Wait for UI update
             page.wait_for_timeout(500)
+
+            # Dismiss popups before save
+            self.dismiss_popups(page)
 
             # Click save
             save_selectors = [
@@ -182,7 +244,10 @@ class ToggleAutomation:
             for selector in save_selectors:
                 try:
                     if page.locator(selector).count() > 0:
-                        page.click(selector)
+                        try:
+                            page.click(selector, timeout=5000)
+                        except Exception:
+                            page.locator(selector).first.click(force=True)
                         saved = True
                         logger.info(f"Save clicked")
                         break
