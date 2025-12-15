@@ -215,7 +215,10 @@ class ToggleAutomation:
 
         try:
             # Wait for page to fully load
-            page.wait_for_load_state("networkidle", timeout=15000)
+            try:
+                page.wait_for_load_state("networkidle", timeout=30000)
+            except Exception:
+                logger.info("Page still loading, continuing...")
             page.wait_for_timeout(2000)
 
             # Dismiss any Pendo popups that may be blocking
@@ -363,7 +366,11 @@ class ToggleAutomation:
             logger.info("Step 1: Opening first URL and logging in...")
 
             first_page = context.new_page()
-            first_page.goto(first_row['url'], wait_until="networkidle", timeout=30000)
+            first_page.goto(first_row['url'], wait_until="domcontentloaded", timeout=60000)
+            try:
+                first_page.wait_for_load_state("networkidle", timeout=30000)
+            except Exception:
+                logger.info("Page still loading, continuing anyway...")
 
             if self.is_login_page(first_page):
                 logger.info("Login page detected, logging in...")
@@ -374,8 +381,11 @@ class ToggleAutomation:
                     return
 
                 # Navigate back to first URL after login
-                first_page.goto(first_row['url'], wait_until="domcontentloaded", timeout=30000)
-                first_page.wait_for_load_state("networkidle", timeout=30000)
+                first_page.goto(first_row['url'], wait_until="domcontentloaded", timeout=60000)
+                try:
+                    first_page.wait_for_load_state("networkidle", timeout=30000)
+                except Exception:
+                    logger.info("Page still loading, continuing anyway...")
 
             logger.info("Login successful, session established")
 
@@ -391,7 +401,7 @@ class ToggleAutomation:
                 logger.info(f"Opening tab {idx + 1}: {row['url']}")
 
                 page = context.new_page()
-                page.goto(row['url'], wait_until="domcontentloaded", timeout=30000)
+                page.goto(row['url'], wait_until="domcontentloaded", timeout=60000)
                 pages.append(page)
                 urls.append(row['url'])
 
@@ -399,9 +409,9 @@ class ToggleAutomation:
             logger.info("Waiting for all tabs to load...")
             for page in pages:
                 try:
-                    page.wait_for_load_state("networkidle", timeout=15000)
+                    page.wait_for_load_state("networkidle", timeout=30000)
                 except Exception:
-                    pass
+                    logger.info("Tab still loading, continuing...")
 
             # Step 3: Process each tab - set toggle state, verify, record, close
             logger.info(f"\n{'='*50}")
