@@ -5,7 +5,7 @@ echo =========================================
 echo   Toggle Automation - Setup
 echo =========================================
 
-cd /d "%~dp0"
+cd /d "%~dp0\.."
 
 REM Check Python
 python --version >nul 2>&1

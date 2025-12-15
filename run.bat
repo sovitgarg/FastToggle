@@ -8,9 +8,6 @@ echo   Toggle Automation
 echo =========================================
 echo.
 
-REM Pre-requisite checks
-set SETUP_NEEDED=0
-
 REM Check 1: Python installed
 python --version >nul 2>&1
 if errorlevel 1 (
@@ -25,54 +22,46 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Check 2: Virtual environment exists
-if not exist "_system\venv" (
-    echo Virtual environment not found. Setting up...
-    set SETUP_NEEDED=1
-)
+REM Check 2: Virtual environment exists - if not, run setup
+if not exist "_system\venv\Scripts\activate.bat" goto :setup
 
-REM Check 3: Required packages installed (only if venv exists)
-if %SETUP_NEEDED%==0 (
-    if exist "_system\venv" (
-        call _system\venv\Scripts\activate.bat
-        python -c "import playwright, pandas, openpyxl" >nul 2>&1
-        if errorlevel 1 (
-            echo Required packages missing. Setting up...
-            set SETUP_NEEDED=1
-        )
-    )
-)
+REM Check 3: Required packages installed
+call _system\venv\Scripts\activate.bat
+python -c "import playwright, pandas, openpyxl" >nul 2>&1
+if errorlevel 1 goto :setup
 
-REM Run setup if needed
-if %SETUP_NEEDED%==1 (
-    echo.
-    echo =========================================
-    echo   Running First-Time Setup
-    echo =========================================
-    echo.
+REM All checks passed, skip to run
+goto :run
 
-    REM Create folder structure
-    if not exist "_system\scripts" mkdir _system\scripts
-    if not exist "_system\logs" mkdir _system\logs
-    if not exist "output" mkdir output
+:setup
+echo.
+echo =========================================
+echo   Running First-Time Setup
+echo =========================================
+echo.
 
-    echo Creating virtual environment...
-    python -m venv _system\venv
+REM Create folder structure
+if not exist "_system\scripts" mkdir _system\scripts
+if not exist "_system\logs" mkdir _system\logs
+if not exist "output" mkdir output
 
-    call _system\venv\Scripts\activate.bat
+echo Creating virtual environment...
+python -m venv _system\venv
 
-    echo Installing dependencies...
-    pip install --upgrade pip --quiet
-    pip install playwright pandas openpyxl --quiet
+call _system\venv\Scripts\activate.bat
 
-    echo Installing browser (this may take a minute)...
-    playwright install chromium
+echo Installing dependencies...
+pip install --upgrade pip --quiet
+pip install playwright pandas openpyxl --quiet
 
-    echo.
-    echo Setup complete!
-    echo.
-)
+echo Installing browser - this may take a minute...
+playwright install chromium
 
+echo.
+echo Setup complete!
+echo.
+
+:run
 REM Activate virtual environment
 call _system\venv\Scripts\activate.bat
 
