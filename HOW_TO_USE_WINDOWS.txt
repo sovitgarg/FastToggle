@@ -9,10 +9,14 @@ FOLDER STRUCTURE
 ============================================
 
 FastToggle/
-├── run.bat              <-- Double-click to toggle
-├── check_status.bat     <-- Double-click to check status
-├── ToggleExcel.xlsx     <-- Edit this file with your URLs
-└── output/              <-- Results saved here
+├── run_A_ON.bat          <-- Set all A toggles to ON
+├── run_A_OFF.bat         <-- Set all A toggles to OFF
+├── run_B_ON.bat          <-- Set all B toggles to ON
+├── run_B_OFF.bat         <-- Set all B toggles to OFF
+├── ToggleExcel_A.xlsx    <-- URLs for group A
+├── ToggleExcel_B.xlsx    <-- URLs for group B
+├── check_status.bat      <-- Check current toggle status
+└── output/               <-- Results saved here
 
 
 ============================================
@@ -27,36 +31,37 @@ STEP 1: INSTALL PYTHON (One-time)
 
 
 ============================================
-STEP 2: EDIT ToggleExcel.xlsx
+STEP 2: CREATE EXCEL FILES
 ============================================
 
-1. Double-click "ToggleExcel.xlsx" to open it
+Create two Excel files:
 
-2. Fill in your data:
+1. ToggleExcel_A.xlsx - URLs for group A
+2. ToggleExcel_B.xlsx - URLs for group B
 
-   | URL          | Toggle | userid         | password     |
-   |--------------|--------|----------------|--------------|
-   | https://...  | ON     | your@email.com | yourpassword |
-   | https://...  | OFF    | your@email.com | yourpassword |
-   | https://...  | Skip   | your@email.com | yourpassword |
+Excel format (3 columns only):
 
-   - "ON"  = Turn toggle ON (if already ON, skips)
-   - "OFF" = Turn toggle OFF (if already OFF, skips)
-   - Any other value (Skip, No, etc.) = Skip this URL
+   | URL           | userid         | password     |
+   |---------------|----------------|--------------|
+   | https://...   | your@email.com | yourpassword |
+   | https://...   | your@email.com | yourpassword |
 
-3. Save and close the file (Ctrl+S)
+NO Toggle column needed!
 
 
 ============================================
-STEP 3: RUN THE TOGGLE
+STEP 3: RUN THE AUTOMATION
 ============================================
 
-1. Double-click "run.bat"
-2. First time: Setup runs automatically (2-5 minutes)
-3. Browser opens automatically
-4. DO NOT touch keyboard/mouse while browser is running!
-5. Wait for it to finish
-6. Results saved in: output/toggle_results.xlsx
+Just double-click the appropriate batch file:
+
+   run_A_ON.bat   --> Turn ON all toggles in ToggleExcel_A.xlsx
+   run_A_OFF.bat  --> Turn OFF all toggles in ToggleExcel_A.xlsx
+   run_B_ON.bat   --> Turn ON all toggles in ToggleExcel_B.xlsx
+   run_B_OFF.bat  --> Turn OFF all toggles in ToggleExcel_B.xlsx
+
+First time: Setup runs automatically (2-5 minutes)
+Browser opens automatically - DO NOT touch keyboard/mouse!
 
 
 ============================================
@@ -74,16 +79,17 @@ To verify current toggle states:
 OUTPUT FILES
 ============================================
 
-output/toggle_results.xlsx:
+output/toggle_results_A_ON.xlsx   - Results from run_A_ON.bat
+output/toggle_results_A_OFF.xlsx  - Results from run_A_OFF.bat
+output/toggle_results_B_ON.xlsx   - Results from run_B_ON.bat
+output/toggle_results_B_OFF.xlsx  - Results from run_B_OFF.bat
+
+Each file contains:
 - status: success, failed, or skipped
-- desired_state: ON or OFF (what you requested)
+- desired_state: ON or OFF
 - toggle_state_before: ON or OFF
 - toggle_state_after: ON or OFF
 - updated_at: Date and time
-
-output/status_report.xlsx:
-- toggle_status: ON or OFF
-- checked_at: Date and time
 
 
 ============================================
@@ -91,13 +97,13 @@ TROUBLESHOOTING
 ============================================
 
 "Python is not recognized"
-→ Reinstall Python, check "Add to PATH"
+-> Reinstall Python, check "Add to PATH"
 
 First run takes long time
-→ Normal! Setup installs browser (2-5 minutes)
+-> Normal! Setup installs browser (2-5 minutes)
 
 Login fails
-→ Check userid/password in ToggleExcel.xlsx
+-> Check userid/password in Excel file
 
 
 ============================================

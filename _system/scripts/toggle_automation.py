@@ -4,15 +4,13 @@ Reads URLs from Excel and sets toggle to desired state (ON/OFF).
 Uses single login session with multiple tabs for efficiency.
 
 Excel format:
-URL | Toggle | userid | password
-https://example.com/settings | ON | user1 | pass1
-https://example.com/settings | OFF | user2 | pass2
-https://example.com/settings | Skip | user3 | pass3
+URL | userid | password
+https://example.com/settings | user1 | pass1
+https://example.com/settings | user2 | pass2
 
-Toggle values:
-- ON (case insensitive): Ensure toggle is turned ON
-- OFF (case insensitive): Ensure toggle is turned OFF
-- Any other value: Skip this row
+Usage:
+python toggle_automation.py "ToggleExcel_A.xlsx" --state ON --no-headless
+python toggle_automation.py "ToggleExcel_B.xlsx" --state OFF --no-headless
 """
 
 import pandas as pd
@@ -35,10 +33,14 @@ logger = logging.getLogger(__name__)
 
 
 class ToggleAutomation:
-    def __init__(self, excel_path: str, headless: bool = True):
+    def __init__(self, excel_path: str, state: str, headless: bool = True):
         self.excel_path = excel_path
+        self.state = state.strip().upper()  # ON or OFF
         self.headless = headless
         self.results = []
+
+        if self.state not in ['ON', 'OFF']:
+            raise ValueError(f"Invalid state: {state}. Must be ON or OFF.")
 
     def load_excel(self) -> pd.DataFrame:
         """Load and validate Excel file."""
@@ -47,13 +49,11 @@ class ToggleAutomation:
         df = pd.read_excel(self.excel_path)
         df.columns = df.columns.str.strip().str.lower()
 
-        required_columns = ['url', 'toggle', 'userid', 'password']
+        required_columns = ['url', 'userid', 'password']
         missing = [col for col in required_columns if col not in df.columns]
 
         if missing:
             raise ValueError(f"Missing required columns: {missing}")
-
-        df['toggle'] = df['toggle'].str.strip().str.lower()
 
         logger.info(f"Loaded {len(df)} rows from Excel")
         return df
@@ -313,18 +313,11 @@ class ToggleAutomation:
         """Main execution method using tabs."""
         df = self.load_excel()
 
-        # Filter rows where toggle is 'on' or 'off' (case insensitive)
-        active_rows = df[df['toggle'].isin(['on', 'off'])].reset_index(drop=True)
-        skipped_count = len(df) - len(active_rows)
-
-        if skipped_count > 0:
-            logger.info(f"Skipping {skipped_count} rows with toggle value other than ON/OFF")
-
-        if len(active_rows) == 0:
-            logger.info("No rows with Toggle=ON or Toggle=OFF found")
+        if len(df) == 0:
+            logger.info("No rows found in Excel")
             return
 
-        logger.info(f"Processing {len(active_rows)} URLs (ON: {len(active_rows[active_rows['toggle'] == 'on'])}, OFF: {len(active_rows[active_rows['toggle'] == 'off'])})")
+        logger.info(f"Processing {len(df)} URLs - Setting all to {self.state}")
 
         with sync_playwright() as p:
             # Launch browser
@@ -361,7 +354,7 @@ class ToggleAutomation:
             context = browser.new_context()
 
             # Step 1: Open first URL and login
-            first_row = active_rows.iloc[0]
+            first_row = df.iloc[0]
             logger.info(f"\n{'='*50}")
             logger.info("Step 1: Opening first URL and logging in...")
 
@@ -391,13 +384,13 @@ class ToggleAutomation:
 
             # Step 2: Open all other URLs in new tabs
             logger.info(f"\n{'='*50}")
-            logger.info(f"Step 2: Opening {len(active_rows) - 1} additional tabs...")
+            logger.info(f"Step 2: Opening {len(df) - 1} additional tabs...")
 
             pages = [first_page]
             urls = [first_row['url']]
 
-            for idx in range(1, len(active_rows)):
-                row = active_rows.iloc[idx]
+            for idx in range(1, len(df)):
+                row = df.iloc[idx]
                 logger.info(f"Opening tab {idx + 1}: {row['url']}")
 
                 page = context.new_page()
@@ -418,16 +411,15 @@ class ToggleAutomation:
             logger.info("Step 3: Processing each tab...")
 
             for idx, (page, url) in enumerate(zip(pages, urls)):
-                desired_state = active_rows.iloc[idx]['toggle']
-                logger.info(f"\n--- Tab {idx + 1}/{len(pages)}: {url.split('/')[-1]} (Set to: {desired_state.upper()}) ---")
+                logger.info(f"\n--- Tab {idx + 1}/{len(pages)}: {url.split('/')[-1]} (Set to: {self.state}) ---")
 
                 # Bring tab to front
                 page.bring_to_front()
                 page.wait_for_timeout(500)
 
                 # Set toggle to desired state and verify
-                result = self.set_toggle_state(page, url, desired_state)
-                result['userid'] = active_rows.iloc[idx]['userid']
+                result = self.set_toggle_state(page, url, self.state)
+                result['userid'] = df.iloc[idx]['userid']
 
                 self.results.append(result)
 
@@ -477,6 +469,8 @@ class ToggleAutomation:
 def main():
     parser = argparse.ArgumentParser(description='Automated Toggle Script')
     parser.add_argument('excel_file', help='Path to Excel file with URLs and credentials')
+    parser.add_argument('--state', required=True, choices=['ON', 'OFF', 'on', 'off'],
+                        help='Desired toggle state: ON or OFF')
     parser.add_argument('--headless', action='store_true', default=True,
                         help='Run browser in headless mode (default: True)')
     parser.add_argument('--no-headless', action='store_false', dest='headless',
@@ -488,7 +482,7 @@ def main():
         logger.error(f"Excel file not found: {args.excel_file}")
         return
 
-    automation = ToggleAutomation(args.excel_file, args.headless)
+    automation = ToggleAutomation(args.excel_file, args.state, args.headless)
     automation.run()
 
 
