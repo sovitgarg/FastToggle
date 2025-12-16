@@ -59,6 +59,7 @@ class ToggleAutomation:
         self.results = []
         self.context = None
         self.browser = None
+        self.start_time = None
 
         if self.state not in ['ON', 'OFF']:
             raise ValueError(f"Invalid state: {state}. Must be ON or OFF.")
@@ -451,6 +452,7 @@ class ToggleAutomation:
 
     def run(self):
         """Main execution method with batch processing."""
+        self.start_time = datetime.now()
         df = self.load_excel()
 
         if len(df) == 0:
@@ -576,10 +578,24 @@ class ToggleAutomation:
         errors = sum(1 for r in self.results if r['status'] == 'error')
         skipped = sum(1 for r in self.results if r['status'] == 'skipped')
 
+        # Calculate duration
+        end_time = datetime.now()
+        duration = end_time - self.start_time if self.start_time else None
+        duration_str = ""
+        if duration:
+            total_seconds = int(duration.total_seconds())
+            minutes, seconds = divmod(total_seconds, 60)
+            duration_str = f"{minutes} min {seconds} sec" if minutes > 0 else f"{seconds} sec"
+
         print("\n")
         print("=" * 60)
         print("                    EXECUTION SUMMARY")
         print("=" * 60)
+        if self.start_time and duration_str:
+            print(f"  Started:          {self.start_time.strftime('%I:%M:%S %p')}")
+            print(f"  Finished:         {end_time.strftime('%I:%M:%S %p')}")
+            print(f"  Duration:         {duration_str}")
+            print("-" * 60)
         print(f"  Total processed:  {total}")
         print(f"  Successful:       {success} {'(all good!)' if success == total else ''}")
         print(f"  Failed:           {failed}")
@@ -631,6 +647,8 @@ def main():
         print_status(f"FATAL ERROR: {str(e)}", "!!")
         logger.error(f"Fatal error: {str(e)}")
 
+    # Beep to notify completion
+    print("\a")
     print("\nPress Enter to close...")
     try:
         input()

@@ -56,6 +56,7 @@ class StatusChecker:
         self.results = []
         self.context = None
         self.browser = None
+        self.start_time = None
 
     def load_excel(self) -> pd.DataFrame:
         """Load and validate Excel file."""
@@ -353,6 +354,7 @@ class StatusChecker:
 
     def run(self):
         """Main execution method with batch processing."""
+        self.start_time = datetime.now()
         df = self.load_excel()
 
         if len(df) == 0:
@@ -476,10 +478,24 @@ class StatusChecker:
         off_count = sum(1 for r in self.results if r['toggle_status'] == 'OFF')
         error_count = sum(1 for r in self.results if r['toggle_status'] in ['ERROR', 'NOT_FOUND', 'UNKNOWN'])
 
+        # Calculate duration
+        end_time = datetime.now()
+        duration = end_time - self.start_time if self.start_time else None
+        duration_str = ""
+        if duration:
+            total_seconds = int(duration.total_seconds())
+            minutes, seconds = divmod(total_seconds, 60)
+            duration_str = f"{minutes} min {seconds} sec" if minutes > 0 else f"{seconds} sec"
+
         print("\n")
         print("=" * 60)
         print("                  TOGGLE STATUS REPORT")
         print("=" * 60)
+        if self.start_time and duration_str:
+            print(f"  Started:     {self.start_time.strftime('%I:%M:%S %p')}")
+            print(f"  Finished:    {end_time.strftime('%I:%M:%S %p')}")
+            print(f"  Duration:    {duration_str}")
+            print("-" * 60)
         print(f"  Total URLs:  {len(self.results)}")
         print(f"  Toggle ON:   {on_count}")
         print(f"  Toggle OFF:  {off_count}")
@@ -527,6 +543,8 @@ def main():
         print_status(f"FATAL ERROR: {str(e)}", "!!")
         logger.error(f"Fatal error: {str(e)}")
 
+    # Beep to notify completion
+    print("\a")
     print("\nPress Enter to close...")
     try:
         input()
