@@ -1,6 +1,7 @@
 """
 Toggle Status Checker
 Logs in once and checks the current state of toggles for all URLs.
+Uses batch processing for reliability with large number of URLs.
 Outputs results to Excel file.
 
 Excel format:
@@ -29,16 +30,36 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Batch size for processing URLs
+BATCH_SIZE = 5
+
+
+def print_status(message, symbol="*"):
+    """Print user-friendly status message."""
+    print(f"\n{symbol * 3} {message} {symbol * 3}")
+
+
+def print_progress(current, total, url_name, status=""):
+    """Print progress indicator."""
+    percentage = int((current / total) * 100)
+    bar_length = 30
+    filled = int(bar_length * current / total)
+    bar = "=" * filled + "-" * (bar_length - filled)
+    status_text = f" - {status}" if status else ""
+    print(f"\r[{bar}] {current}/{total} ({percentage}%) | {url_name}{status_text}    ", end="", flush=True)
+
 
 class StatusChecker:
     def __init__(self, excel_path: str, headless: bool = True):
         self.excel_path = excel_path
         self.headless = headless
         self.results = []
+        self.context = None
+        self.browser = None
 
     def load_excel(self) -> pd.DataFrame:
         """Load and validate Excel file."""
-        logger.info(f"Loading Excel file: {self.excel_path}")
+        print_status(f"Loading Excel file: {self.excel_path}", ">>")
 
         df = pd.read_excel(self.excel_path)
         df.columns = df.columns.str.strip().str.lower()
@@ -49,6 +70,7 @@ class StatusChecker:
         if missing:
             raise ValueError(f"Missing required columns: {missing}")
 
+        print(f"    Found {len(df)} URLs to check")
         logger.info(f"Loaded {len(df)} rows from Excel")
         return df
 
@@ -72,6 +94,7 @@ class StatusChecker:
     def login(self, page, userid: str, password: str) -> bool:
         """Login to the website."""
         try:
+            print(f"    Logging in as: {userid}")
             logger.info(f"Attempting login for user: {userid}")
 
             username_selectors = [
@@ -124,10 +147,12 @@ class StatusChecker:
             page.wait_for_load_state("networkidle", timeout=30000)
             page.wait_for_timeout(2000)
 
+            print("    Login successful!")
             logger.info("Login successful")
             return True
 
         except Exception as e:
+            print(f"    Login FAILED: {str(e)}")
             logger.error(f"Login failed: {str(e)}")
             return False
 
@@ -171,7 +196,6 @@ class StatusChecker:
                     const pendoElements = document.querySelectorAll('#pendo-base, [class*="pendo-backdrop"], ._pendo-step-container');
                     pendoElements.forEach(el => el.remove());
                 """)
-                logger.info("Removed Pendo elements via JavaScript")
             except Exception:
                 pass
 
@@ -242,143 +266,227 @@ class StatusChecker:
 
         return result
 
-    def run(self):
-        """Main execution method."""
-        df = self.load_excel()
+    def process_batch(self, df_batch, batch_num, total_batches, start_idx, total_urls):
+        """Process a batch of URLs."""
+        print(f"\n    Processing batch {batch_num}/{total_batches} ({len(df_batch)} URLs)...")
 
-        if len(df) == 0:
-            logger.info("No URLs found in Excel")
-            return
+        pages = []
+        urls = []
 
-        logger.info(f"Checking status for {len(df)} URLs")
-
-        with sync_playwright() as p:
-            # Launch browser
-            browser = None
+        # Open all URLs in this batch
+        for idx, row in df_batch.iterrows():
+            url_short = row['url'].split('/')[-1]
+            current_num = start_idx + len(pages) + 1
+            print_progress(current_num, total_urls, url_short, "Opening...")
 
             try:
-                browser = p.chromium.launch(headless=self.headless)
+                page = self.context.new_page()
+                page.goto(row['url'], wait_until="domcontentloaded", timeout=120000)
+                pages.append(page)
+                urls.append(row['url'])
+                logger.info(f"Opened: {url_short}")
+            except Exception as e:
+                # If page fails to open, record error and continue
+                logger.error(f"Failed to open {url_short}: {str(e)}")
+                self.results.append({
+                    'url': row['url'],
+                    'url_short': url_short,
+                    'toggle_status': 'ERROR',
+                    'message': f'Failed to open page: {str(e)[:100]}',
+                    'checked_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                })
+                continue
+
+        # Wait for all pages to load
+        print(f"\n    Waiting for {len(pages)} pages to load...")
+        for page in pages:
+            try:
+                page.wait_for_load_state("networkidle", timeout=30000)
             except Exception:
                 pass
 
-            if not browser:
-                try:
-                    browser = p.chromium.launch(headless=self.headless, channel="chrome")
-                except Exception:
-                    pass
+        # Check status of each page
+        for idx, (page, url) in enumerate(zip(pages, urls)):
+            url_short = url.split('/')[-1]
+            current_num = start_idx + idx + 1
+            print_progress(current_num, total_urls, url_short, "Checking...")
 
-            if not browser:
-                try:
-                    browser = p.firefox.launch(headless=self.headless)
-                except Exception:
-                    pass
-
-            if not browser:
-                logger.error("No browser available")
-                return
-
-            # Create single context for session sharing
-            context = browser.new_context()
-
-            # Step 1: Login using first URL
-            first_row = df.iloc[0]
-            logger.info(f"\n{'='*50}")
-            logger.info("Step 1: Logging in...")
-
-            first_page = context.new_page()
-            first_page.goto(first_row['url'], wait_until="networkidle", timeout=30000)
-
-            if self.is_login_page(first_page):
-                if not self.login(first_page, first_row['userid'], first_row['password']):
-                    logger.error("Login failed, aborting")
-                    context.close()
-                    browser.close()
-                    return
-
-                # Navigate back to first URL
-                first_page.goto(first_row['url'], wait_until="domcontentloaded", timeout=30000)
-                first_page.wait_for_load_state("networkidle", timeout=30000)
-
-            logger.info("Session established")
-
-            # Step 2: Open all URLs in tabs
-            logger.info(f"\n{'='*50}")
-            logger.info(f"Step 2: Opening {len(df)} tabs...")
-
-            pages = [first_page]
-            urls = [first_row['url']]
-
-            for idx in range(1, len(df)):
-                row = df.iloc[idx]
-                logger.info(f"Opening tab {idx + 1}: {row['url'].split('/')[-1]}")
-
-                page = context.new_page()
-                page.goto(row['url'], wait_until="domcontentloaded", timeout=30000)
-                pages.append(page)
-                urls.append(row['url'])
-
-            # Wait for all tabs to load
-            logger.info("Waiting for tabs to load...")
-            for page in pages:
-                try:
-                    page.wait_for_load_state("networkidle", timeout=15000)
-                except Exception:
-                    pass
-
-            # Step 3: Check status of each tab
-            logger.info(f"\n{'='*50}")
-            logger.info("Step 3: Checking toggle status...")
-
-            for idx, (page, url) in enumerate(zip(pages, urls)):
-                url_short = url.split('/')[-1]
-                logger.info(f"Checking {idx + 1}/{len(pages)}: {url_short}")
-
+            try:
                 page.bring_to_front()
                 page.wait_for_timeout(500)
 
                 result = self.check_toggle_status(page, url)
                 self.results.append(result)
 
-                logger.info(f"  Status: {result['toggle_status']}")
+                status_symbol = result['toggle_status']
+                print_progress(current_num, total_urls, url_short, status_symbol)
+                logger.info(f"Status for {url_short}: {result['toggle_status']}")
 
-                page.close()
+            except Exception as e:
+                logger.error(f"Error checking {url_short}: {str(e)}")
+                self.results.append({
+                    'url': url,
+                    'url_short': url_short,
+                    'toggle_status': 'ERROR',
+                    'message': f'Error: {str(e)[:100]}',
+                    'checked_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+                })
+            finally:
+                try:
+                    page.close()
+                except Exception:
+                    pass
 
-            context.close()
-            browser.close()
+        print()  # New line after progress bar
 
-        self.save_results()
-        self.print_summary()
+    def run(self):
+        """Main execution method with batch processing."""
+        df = self.load_excel()
+
+        if len(df) == 0:
+            print_status("No URLs found in Excel file!", "!!")
+            return
+
+        total_urls = len(df)
+        total_batches = (total_urls + BATCH_SIZE - 1) // BATCH_SIZE
+
+        print_status(f"STATUS CHECK - Checking {total_urls} URLs", "=")
+        print(f"    Processing in {total_batches} batches of up to {BATCH_SIZE} URLs each")
+
+        try:
+            with sync_playwright() as p:
+                # Launch browser
+                print_status("Starting browser...", ">>")
+                browser_name = None
+
+                try:
+                    self.browser = p.chromium.launch(headless=self.headless)
+                    browser_name = "Chromium"
+                except Exception:
+                    pass
+
+                if not self.browser:
+                    try:
+                        self.browser = p.chromium.launch(headless=self.headless, channel="chrome")
+                        browser_name = "Chrome"
+                    except Exception:
+                        pass
+
+                if not self.browser:
+                    try:
+                        self.browser = p.firefox.launch(headless=self.headless)
+                        browser_name = "Firefox"
+                    except Exception:
+                        pass
+
+                if not self.browser:
+                    print_status("ERROR: No browser available!", "!!")
+                    logger.error("No browser available")
+                    return
+
+                print(f"    Using: {browser_name}")
+                logger.info(f"Using browser: {browser_name}")
+
+                # Create single context (session) for all operations
+                self.context = self.browser.new_context()
+
+                # Step 1: Login using first URL
+                print_status("Step 1: Logging in...", ">>")
+                first_row = df.iloc[0]
+
+                first_page = self.context.new_page()
+                try:
+                    first_page.goto(first_row['url'], wait_until="domcontentloaded", timeout=120000)
+                    first_page.wait_for_load_state("networkidle", timeout=30000)
+                except Exception as e:
+                    logger.info(f"Page load timeout, continuing: {str(e)}")
+
+                if self.is_login_page(first_page):
+                    if not self.login(first_page, first_row['userid'], first_row['password']):
+                        print_status("Login FAILED! Please check credentials.", "!!")
+                        self.context.close()
+                        self.browser.close()
+                        return
+                else:
+                    print("    Already logged in (session active)")
+
+                first_page.close()
+                print_status("Login complete - Session established", "OK")
+
+                # Step 2: Process URLs in batches
+                print_status(f"Step 2: Checking {total_urls} URLs in batches...", ">>")
+
+                for batch_num in range(total_batches):
+                    start_idx = batch_num * BATCH_SIZE
+                    end_idx = min(start_idx + BATCH_SIZE, total_urls)
+                    df_batch = df.iloc[start_idx:end_idx]
+
+                    self.process_batch(df_batch, batch_num + 1, total_batches, start_idx, total_urls)
+
+                self.context.close()
+                self.browser.close()
+
+        except Exception as e:
+            print_status(f"UNEXPECTED ERROR: {str(e)}", "!!")
+            logger.error(f"Unexpected error: {str(e)}")
+        finally:
+            # Always save results, even if there was an error
+            self.save_results()
+            self.print_summary()
 
     def save_results(self):
         """Save results to Excel (overwrites previous file)."""
+        if not self.results:
+            print_status("No results to save", "!!")
+            return
+
         output_file = "status_report.xlsx"
         results_df = pd.DataFrame(self.results)
         results_df.to_excel(output_file, index=False)
+
+        print_status(f"Results saved to: {output_file}", ">>")
         logger.info(f"Results saved to: {output_file}")
 
     def print_summary(self):
         """Print status summary."""
-        logger.info("\n" + "="*50)
-        logger.info("TOGGLE STATUS REPORT")
-        logger.info("="*50)
+        if not self.results:
+            return
 
         on_count = sum(1 for r in self.results if r['toggle_status'] == 'ON')
         off_count = sum(1 for r in self.results if r['toggle_status'] == 'OFF')
         error_count = sum(1 for r in self.results if r['toggle_status'] in ['ERROR', 'NOT_FOUND', 'UNKNOWN'])
 
-        logger.info(f"Total URLs: {len(self.results)}")
-        logger.info(f"Toggle ON:  {on_count}")
-        logger.info(f"Toggle OFF: {off_count}")
-        logger.info(f"Errors:     {error_count}")
+        print("\n")
+        print("=" * 60)
+        print("                  TOGGLE STATUS REPORT")
+        print("=" * 60)
+        print(f"  Total URLs:  {len(self.results)}")
+        print(f"  Toggle ON:   {on_count}")
+        print(f"  Toggle OFF:  {off_count}")
+        print(f"  Errors:      {error_count}")
+        print("=" * 60)
 
-        logger.info("\nDETAILED STATUS:")
-        logger.info("-" * 40)
-        for r in self.results:
-            status_icon = "✓" if r['toggle_status'] == 'ON' else "✗" if r['toggle_status'] == 'OFF' else "?"
-            logger.info(f"  [{status_icon}] {r['toggle_status']:8} | {r['url_short']}")
+        if error_count > 0:
+            print("\n  ISSUES FOUND:")
+            print("-" * 60)
+            for r in self.results:
+                if r['toggle_status'] in ['ERROR', 'NOT_FOUND', 'UNKNOWN']:
+                    print(f"  [?] {r['url_short']}")
+                    print(f"      {r['message'][:50]}...")
+            print("-" * 60)
+
+        print(f"\n  Output file: status_report.xlsx")
+        print("=" * 60)
+
+        logger.info(f"Summary - Total: {len(self.results)}, ON: {on_count}, OFF: {off_count}, Errors: {error_count}")
 
 
 def main():
+    print("\n")
+    print("=" * 60)
+    print("        TOGGLE STATUS CHECKER")
+    print("=" * 60)
+
     parser = argparse.ArgumentParser(description='Check Toggle Status')
     parser.add_argument('excel_file', help='Path to Excel file with URLs and credentials')
     parser.add_argument('--headless', action='store_true', default=True,
@@ -389,11 +497,21 @@ def main():
     args = parser.parse_args()
 
     if not Path(args.excel_file).exists():
-        logger.error(f"Excel file not found: {args.excel_file}")
+        print_status(f"ERROR: Excel file not found: {args.excel_file}", "!!")
         return
 
-    checker = StatusChecker(args.excel_file, args.headless)
-    checker.run()
+    try:
+        checker = StatusChecker(args.excel_file, args.headless)
+        checker.run()
+    except Exception as e:
+        print_status(f"FATAL ERROR: {str(e)}", "!!")
+        logger.error(f"Fatal error: {str(e)}")
+
+    print("\nPress Enter to close...")
+    try:
+        input()
+    except Exception:
+        pass
 
 
 if __name__ == "__main__":
