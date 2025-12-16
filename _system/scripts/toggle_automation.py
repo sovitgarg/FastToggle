@@ -33,7 +33,7 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Batch size for processing URLs
-BATCH_SIZE = 5
+BATCH_SIZE = 10
 
 
 def print_status(message, symbol="*"):
