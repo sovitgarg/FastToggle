@@ -76,6 +76,15 @@ class ToggleAutomation:
         if missing:
             raise ValueError(f"Missing required columns: {missing}")
 
+        # Clean data: remove empty rows and whitespace
+        df = df.dropna(subset=['url'])
+        df['url'] = df['url'].astype(str).str.strip()
+        df = df[df['url'] != '']
+        df = df[~df['url'].str.lower().isin(['nan', 'none', ''])]
+
+        # Reset index after filtering
+        df = df.reset_index(drop=True)
+
         print(f"    Found {len(df)} URLs to process")
         logger.info(f"Loaded {len(df)} rows from Excel")
         return df
@@ -360,11 +369,13 @@ class ToggleAutomation:
 
         pages = []
         urls = []
+        userids = []
+        processed_count = 0
 
         # Open all URLs in this batch
-        for idx, row in df_batch.iterrows():
+        for batch_idx, (idx, row) in enumerate(df_batch.iterrows()):
             url_short = row['url'].split('/')[-1]
-            current_num = start_idx + len(pages) + 1
+            current_num = start_idx + batch_idx + 1
             print_progress(current_num, total_urls, url_short, "Opening...")
 
             try:
@@ -372,6 +383,7 @@ class ToggleAutomation:
                 page.goto(row['url'], wait_until="domcontentloaded", timeout=120000)
                 pages.append(page)
                 urls.append(row['url'])
+                userids.append(row['userid'])
                 logger.info(f"Opened: {url_short}")
             except Exception as e:
                 # If page fails to open, record error and continue
@@ -386,20 +398,22 @@ class ToggleAutomation:
                     'message': f'Failed to open page: {str(e)[:100]}',
                     'updated_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
                 })
+                processed_count += 1
                 continue
 
         # Wait for all pages to load
-        print(f"\n    Waiting for {len(pages)} pages to load...")
-        for page in pages:
-            try:
-                page.wait_for_load_state("networkidle", timeout=30000)
-            except Exception:
-                pass
+        if pages:
+            print(f"\n    Waiting for {len(pages)} pages to load...")
+            for page in pages:
+                try:
+                    page.wait_for_load_state("networkidle", timeout=30000)
+                except Exception:
+                    pass
 
         # Process each page
-        for idx, (page, url) in enumerate(zip(pages, urls)):
+        for idx, (page, url, userid) in enumerate(zip(pages, urls, userids)):
             url_short = url.split('/')[-1]
-            current_num = start_idx + idx + 1
+            current_num = start_idx + processed_count + idx + 1
             print_progress(current_num, total_urls, url_short, "Processing...")
 
             try:
@@ -407,9 +421,7 @@ class ToggleAutomation:
                 page.wait_for_timeout(500)
 
                 result = self.set_toggle_state(page, url, self.state)
-                # Find the matching userid from df_batch
-                matching_row = df_batch[df_batch['url'] == url].iloc[0]
-                result['userid'] = matching_row['userid']
+                result['userid'] = userid
 
                 self.results.append(result)
 
@@ -419,10 +431,9 @@ class ToggleAutomation:
 
             except Exception as e:
                 logger.error(f"Error processing {url_short}: {str(e)}")
-                matching_row = df_batch[df_batch['url'] == url].iloc[0]
                 self.results.append({
                     'url': url,
-                    'userid': matching_row['userid'],
+                    'userid': userid,
                     'status': 'error',
                     'desired_state': self.state,
                     'toggle_state_before': 'UNKNOWN',
@@ -528,6 +539,14 @@ class ToggleAutomation:
         except Exception as e:
             print_status(f"UNEXPECTED ERROR: {str(e)}", "!!")
             logger.error(f"Unexpected error: {str(e)}")
+            # Try to close browser on error
+            try:
+                if self.context:
+                    self.context.close()
+                if self.browser:
+                    self.browser.close()
+            except Exception:
+                pass
         finally:
             # Always save results, even if there was an error
             self.save_results()
