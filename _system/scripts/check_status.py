@@ -18,6 +18,9 @@ import argparse
 import logging
 from datetime import datetime
 from pathlib import Path
+import os
+import platform
+import subprocess
 
 # Setup logging
 logging.basicConfig(
@@ -468,6 +471,21 @@ class StatusChecker:
 
         print_status(f"Results saved to: {output_file}", ">>")
         logger.info(f"Results saved to: {output_file}")
+
+        # Auto-open the results file
+        self.open_file(output_file)
+
+    def open_file(self, filepath):
+        """Open file with default application."""
+        try:
+            if platform.system() == 'Windows':
+                os.startfile(filepath)
+            elif platform.system() == 'Darwin':  # macOS
+                subprocess.run(['open', filepath], check=False)
+            else:  # Linux
+                subprocess.run(['xdg-open', filepath], check=False)
+        except Exception as e:
+            logger.debug(f"Could not auto-open file: {str(e)}")
 
     def print_summary(self):
         """Print status summary."""
